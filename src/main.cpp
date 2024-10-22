@@ -15,8 +15,12 @@ void merge(int* arr, long l, long m, long r)
    long nr = r - m;
 
    // create temporary arrays создаем временные массивы
+#if defined (__linux__)
    int left[nl], right[nr];
-
+#elif defined(_WIN64)
+   int* left = new int[nl];
+   int* right = new int[nr];
+#endif
    // copy data into temporary arrays копируем данные во временные массивы
    for (int i = 0; i < nl; i++)
        left[i] = arr[l + i];
@@ -53,19 +57,24 @@ void merge(int* arr, long l, long m, long r)
        j++;
        k++;
    }
+
+#if defined(_WIN64)
+   delete[] left;
+   delete[] right;
+#endif
 }
 
-void mergeSort(int *arr, long l, long r) {
-    if (l >= r)
-        return;    
+static void mergeSort(int *arr, long l, long r) {
+    if (l >= r)  return; 
+
     long m = (l + r - 1) / 2;
 
     if (make_thread && ((m - l) > 10000)) {
-        auto f = std::async(std::launch::async, [&] () {
-            mergeSort(arr, l, m);
+        auto f = std::async(std::launch::async, [&] () {           
+            mergeSort(arr, l, m);           
         });
         mergeSort(arr, m + 1, r);
-        //merge(arr, l, m, r);
+       // merge(arr, l, m, r);
     }
     else {
         mergeSort(arr, l, m);
@@ -76,14 +85,15 @@ void mergeSort(int *arr, long l, long r) {
 }
 
 int main(int argc, char** argv) {
-// int arr[] = {5, 2, 7, 3, 22, 13, 6, 87, 15};
-// int size = sizeof(arr) / sizeof(arr[0]);
-// mergeSort(arr, 0, size -1);
+ /*int arr[] = {5, 2, 7, 3, 22, 13, 6, 87, 15};
+ int size = sizeof(arr) / sizeof(arr[0]);
+ mergeSort(arr, 0, size -1);
 
-// for (int i = 0; i < size; ++i)
-// {
-//     std::cout << arr[i] << " ";
-// }
+ for (int i = 0; i < size; ++i)
+ {
+     std::cout << arr[i] << " ";
+ }
+ std::cout << std::endl;*/
 
     srand(0);
 
@@ -91,14 +101,14 @@ int main(int argc, char** argv) {
     int *array = new int[arr_size];
 
     for (long i = 0; i < arr_size; ++i) {
-        array[i] = rand() % 500000;
+        array[i] = rand() % 50000;
     }
-
+       
     // multithreaded launch многопоточный запуск
     auto begin = std::chrono::steady_clock::now();
-    mergeSort(array, 0, arr_size);
+    mergeSort(array, 0, arr_size -1);
     auto end = std::chrono::steady_clock::now();
-
+       
     auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
     std::cout << "the time: " << elapsed_ms.count() << " ms\n";
 
@@ -109,6 +119,7 @@ int main(int argc, char** argv) {
              break;
         }
     }
+    std::cout << std::endl;
 
     for(long i = 0; i < arr_size; i++) {
        array[i] = rand() % 500000;
@@ -118,12 +129,12 @@ int main(int argc, char** argv) {
     make_thread = false;
 
     begin = std::chrono::steady_clock::now();
-    mergeSort(array, 0, arr_size);
+    mergeSort(array, 0, arr_size -1);
     end = std::chrono::steady_clock::now();
 
     elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
     std::cout << "the time: " << elapsed_ms.count() << " ms\n";
-
+    
     delete [] array;
     return 0;
 }
